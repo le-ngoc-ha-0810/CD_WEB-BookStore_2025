@@ -53,20 +53,27 @@
 <!-- Offer Start -->
 <div class="container-fluid offer pt-5">
     <div class="row px-xl-5">
+        <!-- Phần giảm giá 20% -->
         <div class="col-md-6 pb-4">
             <div class="position-relative bg-secondary text-center text-md-right text-white mb-2 py-5 px-5">
                 <div class="position-relative" style="z-index: 1;">
                     <h5 class="text-uppercase text-primary mb-3">Giảm giá lên đến 20%</h5>
                     <h1 class="mb-4 font-weight-semi-bold">Sách hay giảm giá</h1>
+                    <!-- Ảnh thumbnail 1 -->
+                    <img th:src="@{/web/images/banner/thumbnail2.png}" alt="Thumbnail 1" class="img-fluid mb-3">
                     <a th:href="@{san-pham(discount=20)}" class="btn btn-outline-primary py-md-2 px-md-3">Mua ngay</a>
                 </div>
             </div>
         </div>
+
+        <!-- Phần giảm giá 30% -->
         <div class="col-md-6 pb-4">
             <div class="position-relative bg-secondary text-center text-md-left text-white mb-2 py-5 px-5">
                 <div class="position-relative" style="z-index: 1;">
                     <h5 class="text-uppercase text-primary mb-3">Giảm giá lên đến 30%</h5>
                     <h1 class="mb-4 font-weight-semi-bold">Xả kho chào hè</h1>
+                    <!-- Ảnh thumbnail 2 -->
+                    <img th:src="@{/web/images/banner/thumbnail1.png}" alt="Thumbnail 2" class="img-fluid mb-3">
                     <a th:href="@{san-pham(discount=30)}" class="btn btn-outline-primary py-md-2 px-md-3">Mua ngay</a>
                 </div>
             </div>
@@ -186,7 +193,7 @@
             }
         });
 
-        //load new book
+//load new book
         $.ajax({
             url: "new-book",
             cache: false,
@@ -219,6 +226,7 @@
             }
         });
     })
+
 </script>
 </body>
 

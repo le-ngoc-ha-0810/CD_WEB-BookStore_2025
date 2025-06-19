@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
+<!-- CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 
+<!-- JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <head th:replace="web/fragment::head(title='Bookstore - Đặt hàng')">
 </head>
 
@@ -36,36 +40,64 @@
 
 <!-- Checkout Start -->
 <div class="container-fluid pt-5">
-    <form th:action="@{/dat-hang}" method="post" onsubmit="return checkAddress() && checkPhone()" th:object="${order}">
+    <form th:action="@{/dat-hang}" method="post" th:object="${order}">
         <div class="row px-xl-5">
             <div class="col-lg-6">
                 <div class="mb-4" id="shipping-address">
                     <h4 class="font-weight-semi-bold mb-4">Xác nhận thanh toán</h4>
                     <div class="row">
                         <div class="col-md-6 form-group">
-                            <label>Họ và tên</label>
+                            <label>Họ và tên <span class="text-danger">*</span></label>
                             <input th:value="${user.fullname} ? ${user.fullname}" class="form-control" type="text"
-                                   placeholder="Họ và tên" name="name">
+                                   placeholder="Họ và tên" name="name" required>
                         </div>
                         <div class="col-md-6 form-group">
-                            <label>E-mail</label>
-                            <input th:value="${user.email}" class="form-control" type="text"
-                                   placeholder="Vui lòng nhập email" name="email">
+                            <label>E-mail <span class="text-danger">*</span></label>
+                            <input th:value="${user.email}" class="form-control" type="email"
+                                   placeholder="Vui lòng nhập email" name="email" required>
                         </div>
                         <div class="col-md-6 form-group">
-                            <label>Số điện thoại</label>
+                            <label>Số điện thoại <span class="text-danger">*</span></label>
                             <input id="phone" onblur="checkPhone()" th:value="${user.phone} ? ${user.phone}"
-                                   class="form-control"
-                                   type="text" placeholder="Nhập số điện thoại" name="phone">
+                                   class="form-control" type="text" placeholder="Nhập số điện thoại"
+                                   name="phone" required>
                             <span id='phoneError' class='text-center' style='color: red; font-size: smaller'></span>
                         </div>
+
+                        <!-- Cấu trúc địa chỉ mới -->
                         <div class="col-md-6 form-group">
-                            <label>Địa chỉ</label>
-                            <input id="address" class="form-control" onblur="checkAddress()" type="text"
-                                   placeholder="Nhập địa chỉ" name="address">
-                            <span id='addressError' class='text-center' style='color: red; font-size: smaller'></span>
+                            <label>Tỉnh/Thành phố <span class="text-danger">*</span></label>
+                            <select id="city" class="form-control" required>
+                                <option value="">Chọn tỉnh thành</option>
+                            </select>
+                            <input type="hidden" id="cityName" name="city">
                         </div>
                         <div class="col-md-6 form-group">
+                            <label>Quận/Huyện <span class="text-danger">*</span></label>
+                            <select id="district" class="form-control" required>
+                                <option value="">Chọn quận huyện</option>
+                            </select>
+                            <input type="hidden" id="districtName" name="district">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Phường/Xã <span class="text-danger">*</span></label>
+                            <select id="ward" class="form-control" required>
+                                <option value="">Chọn phường xã</option>
+                            </select>
+                            <input type="hidden" id="wardName" name="ward">
+                        </div>
+                        <div class="col-md-12 form-group">
+                            <label>Địa chỉ chi tiết <span class="text-danger">*</span></label>
+                            <input id="addressDetail" class="form-control" type="text"
+                                   placeholder="Số nhà, tên đường..." name="addressDetail" required>
+                        </div>
+                        <input type="hidden" id="fullAddress" name="address">
+
+                        <div class="col-md-12 form-group">
+                            <span id='addressError' class='text-center' style='color: red; font-size: smaller'></span>
+                        </div>
+
+                        <div class="col-md-12 form-group">
                             <label>Ghi chú</label>
                             <textarea class="form-control"
                                       placeholder="Ghi chú (Nếu có)" name="note"></textarea>
@@ -95,17 +127,24 @@
                         <hr class="mt-0">
                         <div class="d-flex justify-content-between mb-3 pt-1">
                             <h6 class="font-weight-medium">Subtotal</h6>
-                            <h6 class="font-weight-medium" th:utext="${items.totalFormat}"></h6>
+                            <h6 class="font-weight-medium" id="subtotal" th:data-value="${items.total}"
+                                th:utext="${items.totalFormat}"></h6>
                         </div>
                         <div class="d-flex justify-content-between">
                             <h6 class="font-weight-medium">Phí vận chuyển</h6>
-                            <h6 class="font-weight-medium">15,000VND</h6>
+                            <h6 class="font-weight-medium" id="shippingFee">15,000VND</h6>
+                            <input type="hidden" name="shippingFee" value="15000">
                         </div>
+                        <div class="d-flex justify-content-between">
+                            <h6 class="font-weight-medium" id="estimatedDelivery">Dự kiến giao hàng: Đang tính...</h6>
+                        </div>
+
                     </div>
                     <div class="card-footer border-secondary bg-transparent">
                         <div class="d-flex justify-content-between mt-2">
                             <h5 class="font-weight-bold">Tổng cộng</h5>
-                            <h5 class="font-weight-bold" th:utext="${items.format}"></h5>
+                            <h5 class="font-weight-bold" id="total" th:utext="${items.format}"></h5>
+                            <input type="hidden" name="totalAmount" th:value="${items.total + 15000}">
                         </div>
                     </div>
                 </div>
@@ -131,14 +170,316 @@
 <a href="#" class="btn btn-primary back-to-top"><i class="fa fa-angle-double-up"></i></a>
 <!--script file-->
 <th:block th:insert="~{web/fragment::body/script}"></th:block>
-<script>
-    function checkAddress() {
-        var addressValue = $("#address").val();
-        if (addressValue.length == 0) {
-            $("#addressError").html("Vui lòng nhập địa chỉ");
-        } else $("#addressError").html("");
-    }
-</script>
-</body>
 
-</html>
+<script>
+    // Hàm kiểm tra địa chỉ
+    function checkAddress() {
+        var city = $("#city").val();
+        var district = $("#district").val();
+        var ward = $("#ward").val();
+        var addressDetail = $("#addressDetail").val();
+
+        if (!city || !district || !ward || !addressDetail) {
+            $("#addressError").html("Vui lòng nhập đầy đủ thông tin địa chỉ");
+            return false;
+        }
+
+        // Tạo địa chỉ đầy đủ
+        var fullAddress = addressDetail + ", " + $("#ward option:selected").text() +
+            ", " + $("#district option:selected").text() +
+            ", " + $("#city option:selected").text();
+        $("#fullAddress").val(fullAddress);
+
+        $("#addressError").html("");
+        return true;
+    }
+
+    // Hàm kiểm tra số điện thoại
+    function checkPhone() {
+        var phoneValue = $("#phone").val();
+        var phoneRegex = /^(0|\+84)(\s|\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\d)(\s|\.)?(\d{3})(\s|\.)?(\d{3})$/;
+
+        if (phoneValue.length == 0) {
+            $("#phoneError").html("Vui lòng nhập số điện thoại");
+            return false;
+        } else if (!phoneRegex.test(phoneValue)) {
+            $("#phoneError").html("Số điện thoại không hợp lệ");
+            return false;
+        } else {
+            $("#phoneError").html("");
+            return true;
+        }
+    }
+
+    // Xử lý form submit
+    $("form").submit(function (e) {
+        var isPhoneValid = checkPhone();
+        var isAddressValid = checkAddress();
+
+        if (!isPhoneValid || !isAddressValid) {
+            e.preventDefault();
+            return false;
+        }
+        return true;
+    });
+
+    // Mapping giữa mã tỉnh/thành và provinceID của GHN
+    const provinceMapping = {
+        '79': 202, // TP HCM
+        '01': 201, // Hà Nội
+        '48': 208, // Đà Nẵng
+        // Thêm các tỉnh/thành khác nếu cần
+    };
+
+    // Mapping giữa mã quận/huyện và districtID của GHN (một số phổ biến)
+    const districtMapping = {
+        '760': 1442, // Quận 1, TPHCM
+        '761': 1443, // Quận 12, TPHCM
+        '764': 1444, // Quận 4, TPHCM
+        '765': 1445, // Quận 5, TPHCM
+        '766': 1446, // Quận 6, TPHCM
+        '767': 1447, // Quận 8, TPHCM
+        '768': 1448, // Quận Bình Tân, TPHCM
+        '771': 1449, // Quận Bình Thạnh, TPHCM
+        '772': 1450, // Quận Gò Vấp, TPHCM
+        '773': 1451, // Quận Phú Nhuận, TPHCM
+        '774': 1452, // Quận Tân Bình, TPHCM
+        '775': 1453, // Quận Tân Phú, TPHCM
+        '776': 1454, // Quận Thủ Đức, TPHCM
+        '001': 1, // Quận Ba Đình, Hà Nội
+        '002': 2, // Quận Hoàn Kiếm, Hà Nội
+        '003': 3, // Quận Tây Hồ, Hà Nội
+    };
+
+    $(document).ready(function () {
+        // Lấy danh sách tỉnh/thành phố
+        $.ajax({
+            url: "https://provinces.open-api.vn/api/?depth=1",
+            method: "GET",
+            dataType: "json",
+            success: function (response) {
+                var citySelect = $("#city");
+                $.each(response, function (index, item) {
+                    citySelect.append($('<option>', {
+                        value: item.code,
+                        text: item.name
+                    }));
+                });
+            }
+        });
+
+        // Xử lý khi chọn tỉnh/thành phố
+        $("#city").change(function () {
+            var cityCode = $(this).val();
+            var cityName = $("#city option:selected").text();
+            $("#cityName").val(cityName);
+
+            // Lấy danh sách quận/huyện
+            $.ajax({
+                url: "https://provinces.open-api.vn/api/p/" + cityCode + "?depth=2",
+                method: "GET",
+                dataType: "json",
+                success: function (response) {
+                    var districtSelect = $("#district");
+                    districtSelect.empty();
+                    districtSelect.append($('<option>', {
+                        value: "",
+                        text: "Chọn quận huyện"
+                    }));
+
+                    if (response && response.districts) {
+                        $.each(response.districts, function (index, item) {
+                            // Thêm data-ghn-id nếu có trong mapping
+                            var ghnId = districtMapping[item.code] || "";
+                            districtSelect.append($('<option>', {
+                                value: item.code,
+                                text: item.name,
+                                'data-ghn-id': ghnId
+                            }));
+                        });
+                    }
+
+                    // Reset phường/xã
+                    var wardSelect = $("#ward");
+                    wardSelect.empty();
+                    wardSelect.append($('<option>', {
+                        value: "",
+                        text: "Chọn phường xã"
+                    }));
+                }
+            });
+        });
+
+        // Xử lý khi chọn quận/huyện
+        $("#district").change(function () {
+            var districtCode = $(this).val();
+            var districtName = $("#district option:selected").text();
+            $("#districtName").val(districtName);
+
+            // Lấy danh sách phường/xã
+            $.ajax({
+                url: "https://provinces.open-api.vn/api/d/" + districtCode + "?depth=2",
+                method: "GET",
+                dataType: "json",
+                success: function (response) {
+                    var wardSelect = $("#ward");
+                    wardSelect.empty();
+                    wardSelect.append($('<option>', {
+                        value: "",
+                        text: "Chọn phường xã"
+                    }));
+
+                    if (response && response.wards) {
+                        $.each(response.wards, function (index, item) {
+                            wardSelect.append($('<option>', {
+                                value: item.code,
+                                text: item.name
+                            }));
+                        });
+                    }
+                }
+            });
+        });
+
+        // Xử lý khi chọn phường/xã
+        $("#ward").change(function () {
+            var wardName = $("#ward option:selected").text();
+            $("#wardName").val(wardName);
+
+            // Tính phí vận chuyển khi chọn đầy đủ địa chỉ
+            if ($("#city").val() && $("#district").val() && $("#ward").val()) {
+                calculateShippingFee();
+            }
+        });
+    });
+
+    // Tính phí vận chuyển
+    function calculateShippingFee() {
+        var cityCode = $("#city").val();
+        var districtCode = $("#district").val();
+        var wardCode = $("#ward").val();
+
+        if (!cityCode || !districtCode || !wardCode) {
+            return;
+        }
+
+        // Hiển thị thông báo đang tính phí
+        $("#shippingFee").text("Đang tính...");
+        $("#estimatedDelivery").text("Dự kiến giao hàng: Đang tính...");
+
+        // Lấy thông tin sản phẩm để tính trọng lượng, kích thước
+        var weight = 500; // Trọng lượng tính bằng gram
+        var length = 20;  // Kích thước tính bằng cm
+        var width = 20;
+        var height = 10;
+
+        // Lấy GHN District ID từ data attribute hoặc mapping
+        var ghnDistrictId = $("#district option:selected").data("ghn-id");
+
+        // Nếu không có data-ghn-id, thử dùng hardcoded mapping
+        if (!ghnDistrictId) {
+            // Mapping cứng một số quận/huyện phổ biến
+            const districtMapping = {
+                '760': 1442, // Quận 1, TPHCM
+                '761': 1443, // Quận 12, TPHCM
+                '764': 1444, // Quận 4, TPHCM
+                '765': 1445, // Quận 5, TPHCM
+                '766': 1446, // Quận 6, TPHCM
+                '767': 1447, // Quận 8, TPHCM
+                '768': 1448, // Quận Bình Tân, TPHCM
+                '771': 1449, // Quận Bình Thạnh, TPHCM
+                '772': 1450, // Quận Gò Vấp, TPHCM
+                '773': 1451, // Quận Phú Nhuận, TPHCM
+                '774': 1452, // Quận Tân Bình, TPHCM
+                '775': 1453, // Quận Tân Phú, TPHCM
+                '776': 1454, // Quận Thủ Đức, TPHCM
+                '769': 1455, // Quận 7, TPHCM
+            };
+
+            ghnDistrictId = districtMapping[districtCode];
+        }
+
+        // Nếu vẫn không có, sử dụng ID mặc định (Quận 1, TPHCM)
+        if (!ghnDistrictId) {
+            console.warn("Không tìm thấy mã quận/huyện GHN cho: " + districtCode);
+            ghnDistrictId = 1442; // Mặc định là Quận 1, TPHCM
+        }
+
+        // Log thông tin để debug
+        console.log("Calculating shipping fee with:", {
+            fromDistrictId: 1454, // ID quận/huyện của shop (GHN ID)
+            fromWardCode: "21211", // Mã phường/xã của shop
+            toDistrictId: ghnDistrictId, // ID quận/huyện người nhận theo GHN
+            toWardCode: wardCode, // Mã phường/xã người nhận
+            weight: weight
+        });
+
+        // Gọi API tính phí vận chuyển
+        $.ajax({
+            url: "/api/shipping/calculate-fee",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                "fromDistrictId": 1454, // ID quận/huyện của shop theo GHN
+                "fromWardCode": "21211", // Mã phường/xã của shop
+                "toDistrictId": ghnDistrictId,
+                "toWardCode": wardCode,
+                "serviceId": 53321,
+                "weight": weight,
+                "length": length,
+                "width": width,
+                "height": height,
+                "insuranceValue": 0
+            }),
+            success: function (response) {
+                console.log("Shipping fee response:", response);
+                if (response.code == 200) {
+                    var shippingFee = response.data.total;
+
+                    // Cập nhật phí vận chuyển lên giao diện
+                    $("#shippingFee").text(formatCurrency(shippingFee) + "VND");
+                    $("input[name='shippingFee']").val(shippingFee);
+
+                    // Cập nhật tổng tiền
+                    var subtotal = parseFloat($("#subtotal").data("value"));
+                    var total = subtotal + shippingFee;
+                    $("#total").text(formatCurrency(total) + "VND");
+                    $("input[name='totalAmount']").val(total);
+
+                    // Cập nhật thời gian giao hàng
+                    $("#estimatedDelivery").text("Dự kiến giao hàng: 3-5 ngày");
+                } else {
+                    handleShippingError();
+                }
+            },
+            error: function (error) {
+                console.error("Lỗi khi tính phí vận chuyển:", error);
+                handleShippingError();
+            }
+        });
+    }
+
+    // Xử lý lỗi khi tính phí vận chuyển
+    function handleShippingError() {
+        // Sử dụng phí vận chuyển mặc định
+        var defaultFee = 15000;
+        $("#shippingFee").text(formatCurrency(defaultFee) + "VND");
+        $("input[name='shippingFee']").val(defaultFee);
+
+        // Cập nhật tổng tiền với phí mặc định
+        var subtotal = parseFloat($("#subtotal").data("value"));
+        var total = subtotal + defaultFee;
+        $("#total").text(formatCurrency(total) + "VND");
+        $("input[name='totalAmount']").val(total);
+
+        // Cập nhật thời gian giao hàng
+        $("#estimatedDelivery").text("Dự kiến giao hàng: 3-5 ngày");
+    }
+
+    // Hàm định dạng tiền tệ
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('vi-VN').format(amount);
+    }
+
+
+</script>
