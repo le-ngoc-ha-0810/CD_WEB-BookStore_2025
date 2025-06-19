@@ -98,23 +98,47 @@
 
     //ajax user login
     $.ajax({
-        url: "getUser", cache: false, dataType: "json", success: function (user) {
+        url: "getUser",
+        cache: false,
+        dataType: "json",
+        success: function (user) {
             var str = "";
-            str += "<a href='/gio-hang' class='nav-item nav-link' title='Giỏ hàng'><i class = 'fas fa-shopping-cart text-primary' ></i><span class='badge'>0</span></a>";
+            str += "<a href='/gio-hang' class='nav-item nav-link position-relative' title='Giỏ hàng'>";
+            str += "<i class='fas fa-shopping-cart text-primary'></i>";
+            str += "<span class='badge bg-danger cart-quantity' id='cartQuantity'></span>";
+            str += "</a>";
+
             if (user.email != null) {
-                str += "<a href='/thong-tin-tai-khoan' class='nav-item nav-link' title='Thông tin tài khoản'> Xin chào, " + user.username + "</a>";
+                str += "<div class='dropdown'>";
+                str += "<button style='border: none' class='btn dropdown-toggle nav-item nav-link' type='button' id='infor' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>";
+                str += "Xin chào, " + user.username;
+                str += "</button>";
+
+                str += "<div class='dropdown-menu' aria-labelledby='infor'>";
+                str += "<a class='dropdown-item' href='/thong-tin-tai-khoan'>Tài khoản</a>";
+                str += "<a class='dropdown-item' href='/don-hang'>Đơn hàng</a>";
+
+                // Kiểm tra quyền admin
                 for (let i of user.roles) {
                     if (i.name == "ROLE_ADMIN") {
-                        str += "<a href='/admin-page/book-management' class='nav-item nav-link'>Trang Admin</a>";
+                        str += "<a class='dropdown-item' href='/admin-page/book-management'>Trang Admin</a>";
                     }
                 }
-                str += "<a href='/logout' class='nav-item nav-link' title='Đăng xuất'>Thoát</a>";
+
+                str += "<div class='dropdown-divider'></div>";
+                str += "<a class='dropdown-item' href='/logout'>Thoát</a>";
+                str += "</div>"; // Đóng dropdown-menu
+                str += "</div>"; // Đóng dropdown
             } else {
                 str += "<a href='/dang-nhap' class='nav-item nav-link'>Đăng nhập</a>";
             }
+
             $("#user-area").html(str);
+            // Gọi hàm cập nhật số lượng sau khi render xong HTML
+            updateCartQuantity();
         }
     });
+
 
 })(jQuery);
 
@@ -422,26 +446,142 @@ function checkOldPass() {
     });
 }
 
-//show alert add to cart success
+// //show alert add to cart success
+// function addToCart(bookId, quantity) {
+//     $.ajax({
+//         method: "get",
+//         url: "them-san-pham",
+//         cache: false,
+//         data: {
+//             bookID: bookId,
+//             quantity: quantity
+//         },
+//         dataType:"json",
+//         success: function (result) {
+//             if (result.user == null) {
+//                 window.location.href="/dang-nhap"
+//             } else alert("Thêm sản phẩm vào giỏ hàng thành công");
+//         }
+//     })
+// }
+// Cập nhật số lượng khi thay đổi số lượng sản phẩm trong giỏ hàng
+function updateCartItem(bookId, quantity) {
+    $.ajax({
+        method: "GET",
+        url: "/cart/update",
+        cache: false,
+        data: {
+            bookId: bookId,
+            quantity: quantity
+        },
+        dataType: "json",
+        success: function(result) {
+            // Cập nhật UI trong trang giỏ hàng (nếu cần)
+
+            // Cập nhật số lượng hiển thị trên icon giỏ hàng
+            updateCartQuantity();
+        }
+    });
+}
+
+// Xử lý sự kiện khi xóa sản phẩm khỏi giỏ hàng
+function removeCartItem(bookId) {
+    $.ajax({
+        method: "GET",
+        url: "/cart/remove",
+        cache: false,
+        data: {
+            bookId: bookId
+        },
+        dataType: "json",
+        success: function(result) {
+            // Xóa phần tử trong UI (nếu cần)
+
+            // Cập nhật số lượng hiển thị trên icon giỏ hàng
+            updateCartQuantity();
+        }
+    });
+}
+
+
+
 function addToCart(bookId, quantity) {
     $.ajax({
-        method: "get",
+        method: "GET",
         url: "them-san-pham",
         cache: false,
         data: {
             bookID: bookId,
             quantity: quantity
         },
-        dataType:"json",
-        success: function (result) {
+        dataType: "json",
+        success: function(result) {
             if (result.user == null) {
-                window.location.href="/dang-nhap"
-            } else alert("Thêm sản phẩm vào giỏ hàng thành công");
+                window.location.href = "/dang-nhap";
+            } else {
+                alert("Thêm sản phẩm vào giỏ hàng thành công");
+                // Cập nhật số lượng giỏ hàng
+                updateCartQuantity();
+            }
+        },
+        error: function() {
+            alert("Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng");
         }
-    })
+    });
 }
+// Hàm cập nhật số lượng giỏ hàng
+function updateCartQuantity() {
+    $.ajax({
+        url: "/cart/preview",
+        method: "GET",
+        cache: false,
+        dataType: "json",
+        success: function(response) {
+            var quantity = response.totalQuantity || 0;
+
+            // Cập nhật hiển thị
+            if (quantity > 0) {
+                $("#cartQuantity").text(quantity).show();
+            } else {
+                $("#cartQuantity").text("0").hide();
+            }
+        },
+        error: function() {
+            $("#cartQuantity").text("0").hide();
+        }
+    });
+}
+
+// Gọi hàm cập nhật số lượng khi trang được tải
+$(document).ready(function() {
+    updateCartQuantity();
+});
 
 function formatPrice(price) {
     price = price.toLocaleString('it-IT', {style: 'currency', currency: 'VND'});
     return price;
 }
+
+window.addEventListener('scroll', function () {
+    var searchBar = document.getElementById('search-bar');
+    if (window.scrollY > 100) { // 100 là khoảng cách cuộn xuống để kích hoạt
+        searchBar.classList.add('fixed');
+    } else {
+        searchBar.classList.remove('fixed');
+    }
+});
+
+
+//
+// // Test xung đột code
+// (function() {
+//     const originalHtml = $.fn.html;
+//     $.fn.html = function() {
+//         const result = originalHtml.apply(this, arguments);
+//         if (this.selector === '#user-area' || (this[0] && this[0].id === 'user-area')) {
+//             console.log('HTML của #user-area bị thay đổi:', arguments[0]);
+//             console.trace(); // In ra stack trace để biết hàm nào gọi
+//         }
+//         return result;
+//     };
+// })();

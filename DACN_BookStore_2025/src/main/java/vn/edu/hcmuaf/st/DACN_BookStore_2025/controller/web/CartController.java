@@ -9,6 +9,7 @@ import vn.edu.hcmuaf.st.DACN_BookStore_2025.api.output.CartOutput;
 import vn.edu.hcmuaf.st.DACN_BookStore_2025.dto.BookDTO;
 import vn.edu.hcmuaf.st.DACN_BookStore_2025.dto.CartDTO;
 import vn.edu.hcmuaf.st.DACN_BookStore_2025.oauth2.CustomOAuth2User;
+import vn.edu.hcmuaf.st.DACN_BookStore_2025.service.IBookService;
 import vn.edu.hcmuaf.st.DACN_BookStore_2025.service.ICartService;
 
 import java.util.List;
@@ -17,6 +18,8 @@ import java.util.List;
 public class CartController {
     @Autowired
     private ICartService cartService;
+    @Autowired
+    private IBookService bookService;
 
     @GetMapping("/them-san-pham")
     public CartDTO addProduct(@RequestParam(name = "bookID", required = false) int bookId, @RequestParam(name = "quantity", required = false) int quantity, Authentication authentication) {
@@ -34,6 +37,15 @@ public class CartController {
         return result;
     }
 
+
+    private void loadBookImages(BookDTO book) {
+        // Nếu danh sách images chưa được load hoặc rỗng
+        if (book.getImages() == null || book.getImages().isEmpty()) {
+            // Gọi service để load images
+            book.setImages(bookService.getBookImages(book.getId()));
+        }
+    }
+
     @GetMapping("get-books")
     public CartOutput getBooks(Authentication authentication) {
         if (authentication == null) return null;
@@ -46,6 +58,8 @@ public class CartController {
         double total = 0.0;
         List<CartDTO> booksDb = cartService.getBooks(userEmail);
         for (CartDTO c : booksDb) {
+            // Đảm bảo images được load đầy đủ
+            loadBookImages(c.getBook());
             total += c.getBook().getPrice() * (1 - (c.getBook().getDiscountPercent() / 100)) * c.getQuantity();
         }
         output.setTotal(total);
@@ -65,6 +79,8 @@ public class CartController {
         CartOutput outputDelete = new CartOutput();
         double total = 0.0;
         for (CartDTO c : cartDeleted) {
+            // Đảm bảo images được load đầy đủ
+            loadBookImages(c.getBook());
             total += c.getBook().getPrice() * (1 - (c.getBook().getDiscountPercent() / 100)) * c.getQuantity();
         }
         outputDelete.setTotal(total);
@@ -84,12 +100,15 @@ public class CartController {
         CartOutput outputUpdate = new CartOutput();
         double total = 0.0;
         for (CartDTO c : cartUpdate) {
+            // Đảm bảo images được load đầy đủ
+            loadBookImages(c.getBook());
             total += c.getBook().getPrice() * (1 - (c.getBook().getDiscountPercent() / 100)) * c.getQuantity();
         }
         outputUpdate.setTotal(total);
         outputUpdate.setBooksList(cartUpdate);
         return outputUpdate;
     }
+
     @GetMapping("/cart/preview")
     public CartOutput previewCart(Authentication authentication) {
         if (authentication == null) return new CartOutput();
@@ -102,6 +121,8 @@ public class CartController {
         double total = 0.0;
         List<CartDTO> booksDb = cartService.getBooks(userEmail);
         for (CartDTO c : booksDb) {
+            // Đảm bảo images được load đầy đủ
+            loadBookImages(c.getBook());
             total += c.getBook().getPrice() * (1 - (c.getBook().getDiscountPercent() / 100)) * c.getQuantity();
         }
         output.setTotal(total);
@@ -115,5 +136,4 @@ public class CartController {
 
         return output;
     }
-
 }
