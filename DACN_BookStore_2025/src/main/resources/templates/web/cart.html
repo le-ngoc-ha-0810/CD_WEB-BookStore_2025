@@ -105,13 +105,28 @@
         //item ở đây là cart dto: cart item id, quantity, book, user, pt getTotalAmount
         for (let item of result.booksList) {
             str += "<tr>";
-            str += "<td><input type='checkbox' id='check" + item.book.id + "' name='carts' field='carts' value='" + item.cartID + "' checked onclick='checkedBook(" + item.book.id + ")'></td>";
-            str += "<td class='align-middle'><img src='img/product-1.jpg' alt='' style='width: 50px;'>";
-            str += "<a href='chi-tiet?id=" + item.book.id + "' style='font-size: smaller'>";
+            // Thêm class text-center để căn giữa checkbox
+            str += "<td class='align-middle text-center'><input type='checkbox' id='check" + item.book.id + "' name='carts' field='carts' value='" + item.cartID + "' checked onclick='checkedBook(" + item.book.id + ")'></td>";
+
+            // Thêm text-center để căn giữa nội dung và sử dụng d-flex để căn chỉnh hình ảnh và văn bản
+            str += "<td class='align-middle text-center'>";
+            str += "<div class='d-flex align-items-center justify-content-center'>";
+
+            // Hiển thị hình ảnh
+            if (item.book.images && item.book.images.length > 0) {
+                str += "<img src='" + item.book.images[0].path + "' alt='" + item.book.title + "' style='width: 70px; height: auto; margin-right: 10px; object-fit: cover;'>";
+            } else {
+                str += "<img src='img/product-1.jpg' alt='' style='width: 70px; height: auto; margin-right: 10px;'>";
+            }
+
+            // Hiển thị tiêu đề sách với style để giảm khoảng cách và căn giữa
+            str += "<a href='chi-tiet?id=" + item.book.id + "' style='font-size: smaller; line-height: 1.2; display: block; max-width: 200px;'>";
             str += item.book.title;
             str += "</a>";
+            str += "</div>";
             str += "</td>";
-            str += "<td class='align-middle'>" + formatPrice(item.book.discount) + "</td>";
+
+            str += "<td class='align-middle text-center'>" + formatPrice(item.book.discount) + "</td>";
             str += "<td class='align-middle'>";
             str += "    <div class='input-group quantity mx-auto' style='width: 100px;'>";
             str += "        <div class='input-group-btn'>";
@@ -119,7 +134,8 @@
             str += "                <i class='fa fa-minus'></i>";
             str += "            </button>";
             str += "        </div>";
-            str += "        <input type='text' id='quantity" + item.book.id + "' class='form-control form-control-sm bg-secondary text-center' value='" + item.quantity + "'>";
+            // Sửa style cho ô input số lượng để đảm bảo căn giữa
+            str += "        <input type='number' min='1' id='quantity" + item.book.id + "' class='form-control form-control-sm bg-secondary' style='text-align: center; padding-left: 0; padding-right: 0;' value='" + item.quantity + "' oninput='validateQuantity(this, " + item.book.id + ")'>";
             str += "        <div class='input-group-btn'>";
             str += "            <button type='button' onclick='plus(" + item.book.id + ")' class='btn btn-sm btn-primary btn-plus'>";
             str += "                <i class='fa fa-plus'></i>";
@@ -127,11 +143,11 @@
             str += "        </div>";
             str += "    </div>";
             str += "</td>";
-            str += "<td class='align-middle'>";
+            str += "<td class='align-middle text-center'>";
             str += "<span id='amount" + item.book.id + "'>" + formatPrice(item.totalAmount) + "</span>";
             str += "<input type=hidden id='totalAmountInput" + item.book.id + "' value='" + item.totalAmount + "'>";
             str += "</td>";
-            str += "<td class='align-middle'>";
+            str += "<td class='align-middle text-center'>";
             str += "    <button type='button' onclick='deleteBook(" + item.book.id + ")' class='btn btn-sm btn-primary'><i class='fa fa-times'></i></button>";
             str += "</td>";
             str += "</tr>";
@@ -141,6 +157,8 @@
         //gan gia tri input ẩn để lát lấy value tính toán
         $("#subTotalInput").val(result.total);
     };
+
+
 
     function checkedBook(id) {
         //nếu nhấn vào checkbox thì nó sẽ lấy cái subtotal cộng hoặc trừ tổng tiền của cart item
@@ -215,6 +233,20 @@
             }
         })
     };
+
+    function validateQuantity(input, bookId) {
+        // Loại bỏ các ký tự không phải số
+        input.value = input.value.replace(/[^0-9]/g, '');
+
+        // Đảm bảo giá trị không được để trống và tối thiểu là 1
+        if (input.value === '' || parseInt(input.value) < 1) {
+            input.value = 1;
+        }
+
+        // Sử dụng hàm updateQuantity đã có sẵn để cập nhật số lượng
+        updateQuantity(bookId, parseInt(input.value));
+    }
+
 </script>
 </body>
 
